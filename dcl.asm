@@ -125,7 +125,7 @@ BUFF_SIZE equ 4096
 	; TODO: wczytaj troche wiecej zeby sprawdzic czy
 	; argument nie jest postaci OKEJ + cos za duzo
 	pop rsi
-	mov rcx, ALPHABET_SIZE 
+	mov rcx, ALPHABET_SIZE + 5
 	mov rdi, %1
 	cld
 	rep movsb
@@ -147,10 +147,14 @@ BUFF_SIZE equ 4096
 	getArgFromStack prmR
 	getArgFromStack prmT
 	
-	; copy the first letter from stack to [l]
+	; extract the letters from the key
 	pop rax
 	mov l_var, byte [rax]
 	mov r_var, byte [rax + 1]
+	
+	cmp byte [rax + 2], 0 ; key longer than two
+	jne exit_failed
+	
 %endmacro
 
 %macro triplicate 1
@@ -372,7 +376,7 @@ _start:
 	getInvAndValidate prmR, invR
 	getInvAndValidate prmT, invT
 	
-	validateT
+	;validateT
 	validateKey
 	
 	triplicate prmL

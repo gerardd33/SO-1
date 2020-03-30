@@ -376,7 +376,7 @@ _start:
 	getInvAndValidate prmR, invR
 	getInvAndValidate prmT, invT
 	
-	;validateT
+	validateT
 	validateKey
 	
 	triplicate prmL

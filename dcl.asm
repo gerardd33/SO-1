@@ -208,11 +208,22 @@ BUFF_SIZE equ 4096
 
 %macro validateT 0
 	; check if T == T^-1
-	;mov r8, 0 ; index in the array(s)
-	; ...
-	; TODO
+	mov r8, 0 ; index in the array(s)
+	mov r9, 0 ; result
+%%loopT1:
+	mov al, byte [invT + r8]
+	mov rbx, 1
+	cmp byte [prmT + r8], al
+	cmove r9, rbx
 	
+	inc r8
+	cmp byte [prmT + r8], 0
+	jne %%loopT1
 	
+	cmp r9, 1
+	je exit_failed
+	
+	; check if there are fixed points in the permutation
 	mov r8, 0
 %%loopT2:
 	cmp [prmT + r8], r8
@@ -361,7 +372,7 @@ _start:
 	getInvAndValidate prmR, invR
 	getInvAndValidate prmT, invT
 	
-	;validateT
+	validateT
 	validateKey
 	
 	triplicate prmL

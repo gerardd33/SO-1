@@ -158,6 +158,8 @@ BUFF_SIZE equ 4096
 %%triplicate_loop:
 	; copy the current element to positions ALPHABET_SIZE and
 	; 2 * ALPHABET_SIZE further 
+	mov rbx, ALPHABET_SIZE
+	add [%1 + rax], rbx ; point to the centre segment of the triplicated array
 	mov bl, byte [%1 + rax]
 	mov [%1 + rax + ALPHABET_SIZE], bl
 	mov [%1 + rax + 2 * ALPHABET_SIZE], bl
@@ -224,20 +226,13 @@ BUFF_SIZE equ 4096
 	inc r_var
 	modulo r_var, ALPHABET_SIZE
 	
-	mov ebx, 1
-	xor eax, eax
 	cmp r_var, 76 - 49 ; 'L' - '1'
-	cmove eax, ebx
+	je incrementLVar
 	cmp r_var, 82 - 49 ; 'R' - '1'
-	cmove eax, ebx
+	je incrementLVar
 	cmp r_var, 84 - 49 ; 'T' - '1'
-	cmove eax, ebx
-	
-	; CZY TO RZUTOWANIE W OGOLE DZIALA ?
-	
-xdd:
-	add l_var, al
-	modulo l_var, ALPHABET_SIZE
+	je incrementLVar
+
 %endmacro
 
 %macro readBlocToBuffer 0
@@ -279,14 +274,15 @@ papiez:
 	sub [r8], al ; *cur -= '1'
 	
 	moveRotors
+comeBack:
 	
 	pap2:
 	; encipherment of the element
 	add [r8], r_var ; *cur += r, Qr
 	movzx rbx, byte [r8]
 	mov al, byte [prmR + rbx]
-	mov [r8], al ; * cur = L[*cur], L
-	sub [r8], r_var ; * cur -= l, Ql^-1
+	mov [r8], al ; * cur = R[*cur], R
+	sub [r8], r_var ; * cur -= r, Qr^-1
 	
 	add [r8], l_var ; *cur += r, Qr
 	movzx rbx, byte [r8]
@@ -388,6 +384,12 @@ before:
 
 exit_failed:
 	exit 1
+	
+incrementLVar:
+inccccd:
+	inc l_var
+	modulo l_var, ALPHABET_SIZE
+	jmp comeBack
 
 
 	

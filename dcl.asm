@@ -1,3 +1,6 @@
+%define l_var bl
+%define r_var cl
+
 SYS_EXIT equ 60
 SYS_WRITE equ 1
 SYS_READ equ 0
@@ -7,9 +10,7 @@ NL equ 10 ; newline
 
 ALPHABET_SIZE equ 42
 ASCII_SIZE equ 256
-
-%define l_var bl
-%define r_var cl
+BUFF_SIZE equ 4096
 
 ; DEBUG
 
@@ -97,13 +98,23 @@ ASCII_SIZE equ 256
 	syscall
 %endmacro
 
-; %1 modulo %2
+; %1 modulo %2, the result in rax
 %macro modulo 2
 	mov rax, %1
 	xor rdx, rdx
 	mov rcx, %2
 	div rcx
 	mov rax, rdx
+%endmacro
+
+; ??? CZY TO W OGOLE DZIALA
+; %1 modulo %2, the result in rax
+%macro moduloByte 2
+	mov al, %1
+	xor dl, dl
+	mov cl, %2
+	div cl
+	mov al, dl
 %endmacro
 
 %macro validateChar 1
@@ -200,6 +211,126 @@ ASCII_SIZE equ 256
 	sub r_var, 49
 %endmacro
 
+%macro validateT 0
+	; check if T == T^-1
+	;mov r8, 0 ; index in the array(s)
+	; ...
+	; TODO
+	
+	
+	mov r8, 0
+%%loopT2:
+	cmp [prmT + r8], r8
+	je exit_failed
+	inc r8
+	jmp %%loopT2
+	
+%endmacro
+	
+%macro moveRotors 0
+	inc r_var
+	moduloByte r_var, ALPHABET_SIZE
+	mov r_var, al
+	
+	; TODO: JAK TO ZROBIC ?????
+	; ...
+	
+	;cmp r_var 76 - 49 ; 'L' - '1'
+	;je ; ...
+	;cmp r_var 82 - 49 ; 'R' - '1'
+	;cmp r_var 84 - 49 ; 'T' - '1'
+	
+	
+	; ...
+	
+	
+	
+%endmacro
+
+%macro readBlocToBuffer 0
+	mov rax, SYS_READ
+	mov rdi, STDIN
+	mov rsi, buff 
+	mov rdx, BUFF_SIZE 
+	syscall
+%endmacro
+
+%macro writeBlocFromBuffer 0
+	mov rax, SYS_WRITE
+	mov rdi, STDOUT
+	mov rsi, buff 
+	mov rdx, [bytesRead]
+	syscall
+%endmacro
+
+
+%macro processInput 0
+%%blocLoop:
+	readBlocToBuffer
+	; check how many bytes have been read 
+	; - if we should continue reading
+	mov [bytesRead], rax
+	cmp rax, 0 
+	je %%allProcessed
+	
+%%elementLoop:
+	; a pointer at the currently processed element 
+	; (to be enciphered) - cur
+	mov r8, buff
+	cmp byte [r8], 0
+	je %%endElementLoop
+	
+	validateChar byte [r8]
+	mov al, 49
+	sub [r8], al ; *cur -= '1'
+	
+	moveRotors
+	
+	; encipherment of the element
+	add [r8], r_var ; *cur += r, Qr
+	mov r10, [r8]
+	mov al, byte [prmR + r10]
+	mov [r8], al ; * cur = L[*cur], L
+	sub [r8], r_var ; * cur -= l, Ql^-1
+	
+	add [r8], l_var ; *cur += r, Qr
+	mov r10, [r8]
+	mov al, byte [prmL + r10]
+	mov [r8], al ; * cur = L[*cur], L
+	sub [r8], l_var ; * cur -= l, Ql^-1
+	
+	mov r10, [r8]
+	mov al, byte [prmT + r10]
+	mov [r8], al ; * cur = T[*cur], T
+	
+	add [r8], l_var ; *cur += l, Ql
+	mov r10, [r8]
+	mov al, byte [invL + r10]
+	mov [r8], al ; * cur = L^-1[*cur], L^-1
+	sub [r8], l_var ; * cur -= l, Ql^-1
+	
+	add [r8], r_var ; *cur += r, Qr
+	mov r10, [r8]
+	mov al, byte [invR + r10]
+	mov [r8], al; * cur = R^-1[*cur], R^-1
+	sub [r8], r_var ; * cur -= r, Qr^-1
+	
+	moduloByte [r8], ALPHABET_SIZE
+	mov [r8], al; JAKOS INACZEJ ? ZA DUZO BAJTOW
+	; CZY NA PEWNO SIE ZMIENIA W BUFF
+	mov al, 49
+	add [r8], al; convert to ascii again to write the element
+	inc r8
+	jmp %%elementLoop
+	
+%%endElementLoop:
+	writeBlocFromBuffer
+	jmp %%blocLoop
+	
+%%allProcessed:
+%endmacro
+
+
 section .bss
 	; DEBUG
 	digitSpace resb 100
@@ -214,6 +345,8 @@ section .bss
 	invL resb 3 * ALPHABET_SIZE + 1 ; L^-1
 	invR resb 3 * ALPHABET_SIZE + 1; R^-1
 	invT resb 3 * ALPHABET_SIZE + 1; T^-1
+	buff resb BUFF_SIZE
+	bytesRead resb 8 ; to the buffer
 	tmpStr resb 2
 	
     
@@ -231,7 +364,7 @@ section .data
 	
 section .text
 	global _start
-
+	
 _start:
 	getArgs
 	getInvAndValidate prmL, invL
@@ -247,6 +380,8 @@ _start:
 	triplicate invL
 	triplicate invR
 	triplicate invT
+	
+	processInput
 
 	papiez:
 	
@@ -257,9 +392,10 @@ _start:
 	;printStringZero prmT
 	;printStringZero newline
 	exit 0
-	
+
 exit_failed:
 	exit 1
+
 
 	
 	

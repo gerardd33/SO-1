@@ -106,6 +106,16 @@ ASCII_SIZE equ 256
 	mov rax, rdx
 %endmacro
 
+%macro validateChar 1
+	; if (c < '1' || c > 'Z') exit(1)
+	mov al, %1
+	cmp al, 49 
+	jb exit_failed
+	
+	cmp al, 90 
+	ja exit_failed
+%endmacro
+
 ; take the argument from stack and copy it to %1
 %macro getArgFromStack 1
 	; TODO: wczytaj troche wiecej zeby sprawdzic czy
@@ -157,7 +167,7 @@ ASCII_SIZE equ 256
 	mov r8, %1 ; a pointer to the current element in the permutation (A)
 	mov r9b, 0 ; index of the current element (idA)
 %%getInvLoop:
-	;validateChar [r8]
+	validateChar byte [r8]
 	
 	; *A -= '1'
 	mov rax, 49
@@ -181,6 +191,13 @@ ASCII_SIZE equ 256
 	cmp r9b, al; idA != ALPHABET_SIZE
 	jne exit_failed
 
+%endmacro
+
+%macro validateKey 0
+	validateChar l_var
+	validateChar r_var
+	sub l_var, 49
+	sub r_var, 49
 %endmacro
 
 section .bss
@@ -216,20 +233,22 @@ section .text
 	global _start
 
 _start:
-	;printStringZero newline
-	;printStringZero newline
 	getArgs
-	
 	getInvAndValidate prmL, invL
-	printStringZero prmL
-	printStringZero newline
-	printStringZero invL
+	getInvAndValidate prmR, invR
+	getInvAndValidate prmT, invT
 	
-papiez:
+	;validateT
+	validateKey
 	
-	;triplicate prmL
-	;triplicate prmR
-	;triplicate prmT
+	triplicate prmL
+	triplicate prmR
+	triplicate prmT
+	triplicate invL
+	triplicate invR
+	triplicate invT
+
+	papiez:
 	
 	;printStringZero prmL
 	;printStringZero newline

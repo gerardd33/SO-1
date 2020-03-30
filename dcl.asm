@@ -6,6 +6,7 @@ STDOUT equ 1
 NL equ 10 ; newline
 
 ALPHABET_SIZE equ 42
+ASCII_SIZE equ 256
 
 %define l_var bl
 %define r_var cl
@@ -58,6 +59,7 @@ ALPHABET_SIZE equ 42
 ; print a zero-terminated string, without knowing its length
 %macro printStringZero 1 
     mov rax, %1
+    add rax, 49 ; USUN POTEM
     mov [printSpace], rax
     mov rbx, 0
 %%printLoop:
@@ -93,6 +95,15 @@ ALPHABET_SIZE equ 42
 	mov rsi, %1 ; string to be printed
 	mov rdx, %2 ; string length
 	syscall
+%endmacro
+
+; %1 modulo %2
+%macro modulo 2
+	mov rax, %1
+	xor rdx, rdx
+	mov rcx, %2
+	div rcx
+	mov rax, rdx
 %endmacro
 
 ; take the argument from stack and copy it to %1
@@ -141,8 +152,35 @@ ALPHABET_SIZE equ 42
 	jne %%triplicate_loop
 %endmacro
 
+; %1 - array, %2 - place for array^-1
 %macro getInvAndValidate 2
+	mov r8, %1 ; a pointer to the current element in the permutation (A)
+	mov r9b, 0 ; index of the current element (idA)
+%%getInvLoop:
+	;validateChar [r8]
 	
+	; *A -= '1'
+	mov rax, 49
+	sub [r8], rax ; *A -= '1'
+	
+	; invA[*A] != 0 - a repeating character
+	movzx rax, byte [r8]
+	
+	cmp byte [%2 + rax], 0
+	jne exit_failed
+	
+	movzx rax, byte [r8]
+	mov [%2 + rax], r9b ; invA[*A] = idA
+	inc r9b ; ++idA
+	
+	inc r8 ; ++A
+	cmp byte [r8], 0
+	jne %%getInvLoop
+	
+	mov al, ALPHABET_SIZE
+	cmp r9b, al; idA != ALPHABET_SIZE
+	jne exit_failed
+
 %endmacro
 
 section .bss
@@ -156,6 +194,9 @@ section .bss
 	prmL resb 3 * ALPHABET_SIZE + 1 ; permutation L
 	prmR resb 3 * ALPHABET_SIZE + 1; permutation R
 	prmT resb 3 * ALPHABET_SIZE + 1; permutation T
+	invL resb 3 * ALPHABET_SIZE + 1 ; L^-1
+	invR resb 3 * ALPHABET_SIZE + 1; R^-1
+	invT resb 3 * ALPHABET_SIZE + 1; T^-1
 	tmpStr resb 2
 	
     
@@ -163,7 +204,6 @@ section .bss
 section .data
 	; DEBUG
 	textArgument db "Argument #",0
-	textArgumentLen equ $ - textArgument
 	colon db ": ",0
 	colonLen equ $ - colon
 	newline db 10,0
@@ -176,13 +216,16 @@ section .text
 	global _start
 
 _start:
-	printStringZero newline
-	printStringZero newline
+	;printStringZero newline
+	;printStringZero newline
 	getArgs
-	getInvAndValidate prmL invL
+	
+	getInvAndValidate prmL, invL
 	printStringZero prmL
 	printStringZero newline
 	printStringZero invL
+	
+papiez:
 	
 	;triplicate prmL
 	;triplicate prmR

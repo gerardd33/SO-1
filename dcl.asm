@@ -216,7 +216,7 @@ BUFF_SIZE equ 4096
 	cmp byte [r8], 0
 	je %%endElementLoop
 	
-	;validateChar byte [r8]
+	; validateChar byte [r8]
 	mov al, '1'
 	sub [r8], al ; *cur -= '1'
 	
@@ -254,7 +254,7 @@ comeBack:
 	
 	modulo [r8], ALPHABET_SIZE
 	mov al, 49
-	add [r8], al; convert to ascii again to write the element
+	add [r8], al ; convert to ascii again to write the element
 	inc r8
 	jmp %%elementLoop
 	
@@ -268,11 +268,11 @@ comeBack:
 section .bss
 	argc resb 8 ; number of arguments 
 	prmL resb 3 * ALPHABET_SIZE + 1 ; permutation L
-	prmR resb 3 * ALPHABET_SIZE + 1; permutation R
-	prmT resb 3 * ALPHABET_SIZE + 1; permutation T
+	prmR resb 3 * ALPHABET_SIZE + 1 ; permutation R
+	prmT resb 3 * ALPHABET_SIZE + 1 ; permutation T
 	invL resb 3 * ALPHABET_SIZE + 1 ; L^-1
-	invR resb 3 * ALPHABET_SIZE + 1; R^-1
-	invT resb 3 * ALPHABET_SIZE + 1; T^-1
+	invR resb 3 * ALPHABET_SIZE + 1 ; R^-1
+	invT resb 3 * ALPHABET_SIZE + 1 ; T^-1
 	bytesRead resb 8 ; to the buffer
 	buff resb BUFF_SIZE
 
